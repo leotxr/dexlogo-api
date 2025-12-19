@@ -1,0 +1,51 @@
+services:
+  php:
+    build:
+      context: .
+      dockerfile: dockerfiles/php/Dockerfile
+    image: application
+    container_name: application
+    tty: true
+    ports:
+      - "9001:9000"
+    volumes:
+      - .:/var/www
+    networks:
+      - laravel_app
+    depends_on:
+      - mysql
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    ports:
+      - "80:80"
+    volumes:
+      - .:/var/www
+      - ./dockerfiles/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - laravel_app
+    depends_on:
+      - php
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: dexlogo-api
+      MYSQL_USER: docker_user
+      MYSQL_PASSWORD: Admin123
+      MYSQL_ROOT_PASSWORD: Admin123
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - laravel_app
+
+volumes:
+  db_data:
+
+networks:
+  laravel_app:
+    driver: bridge
