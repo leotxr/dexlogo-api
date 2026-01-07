@@ -14,7 +14,9 @@ return new class extends Migration
         Schema::create('access_codes', function (Blueprint $table) {
             $table->id();
             $table->string('code')->unique();
-            $table->foreignId('order_id')->constrained();
+            $table->foreignId('order_id')
+                ->constrained('orders')
+                ->cascadeOnDelete();
             $table->timestamp('expires_at')->nullable();
             $table->boolean('active')->default(true);
             $table->timestamps();

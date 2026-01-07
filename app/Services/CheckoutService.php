@@ -36,6 +36,7 @@ class CheckoutService extends Service
         return [
             'sucesso'       => true,
             'order_id'      => $this->pagamento->id,
+            'uuid'          => $this->pagamento->uuid,
             'url_pagamento' => $this->preference->init_point,
             'mensagem'      => 'Pedido criado com sucesso!'
         ];
@@ -44,6 +45,7 @@ class CheckoutService extends Service
     private function criarOrder($data)
     {
         $this->pagamento = Order::create([
+            'uuid'      =>  (string) Str::orderedUuid(),
             'nome'      =>  $data['nome'],
             'email'     =>  $data['email'],
             'telefone'  =>  $data['telefone'],
@@ -69,12 +71,12 @@ class CheckoutService extends Service
                 $this->gerarPayer($data)
             ],
             'back_urls' => [
-                'success' => url('/payment/success?order_id=' . $this->pagamento->id),
-                'failure' => url('/payment/failure?order_id=' . $this->pagamento->id),
-                'pending' => url('/payment/pending?order_id=' . $this->pagamento->id)
+                'success' => url('/payment/success?order_id=' . $this->pagamento->uuid),
+                'failure' => url('/payment/failure?order_id=' . $this->pagamento->uuid),
+                'pending' => url('/payment/pending?order_id=' . $this->pagamento->uuid)
             ],
-            'external_reference' => (string) $this->pagamento->id,
-            'notification_url' => url('/api/checkout/webhook'),
+            'external_reference' => (string) $this->pagamento->uuid,
+            'notification_url' => url('/api/checkout/webhook/' . $this->pagamento->uuid),
         ]);
 
         if (!$this->preference) {

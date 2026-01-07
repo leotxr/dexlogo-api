@@ -13,7 +13,9 @@ return new class extends Migration
     {
         Schema::create('webhooks', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('order_id')->constrained();
+            $table->foreignId('order_id')
+                ->constrained('orders')
+                ->cascadeOnDelete();
             $table->json('resposta')->nullable();
             $table->timestamps();
         });
