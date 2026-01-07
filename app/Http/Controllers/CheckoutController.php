@@ -37,14 +37,4 @@ class CheckoutController extends Controller
             return $this->errorResponse($e->getMessage(), [], 400);
         }
     }
-
-    public function webhook(Request $request)
-    {
-        try {
-            $checkout = $this->webhookService->processar($request);
-            return $this->successResponse('Checkout iniciado com sucesso!', []);
-        } catch (Exception $e) {
-            return $this->errorResponse($e->getMessage(), [], 400);
-        }
-    }
 }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\MercadoPagoWebhookController;
 use App\Models\Checkout;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -16,5 +17,5 @@ Route::get('/teste', function () {
 Route::prefix('checkout')->group(function () {
     Route::post('/iniciar', [CheckoutController::class, 'start'])->name('checkout.iniciar');
     Route::get('/sucesso/{id}', [CheckoutController::class, 'success'])->name('checkout.successo');
-    Route::post('/webhook', [CheckoutController::class, 'webhook'])->name('checkout.webhook');
+    Route::post('/webhook', [MercadoPagoWebhookController::class, 'handle'])->name('checkout.webhook');
 });

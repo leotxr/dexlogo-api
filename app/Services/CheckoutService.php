@@ -118,13 +118,4 @@ class CheckoutService extends Service
             'basico'    =>  9.90
         };
     }
-
-    public function gerarCodigo($orderId)
-    {
-        return AccessCode::create([
-            'code'          => Str::upper(Str::random(16)),
-            'expires_at'    => now()->addYear(),
-            'order_id'      => $orderId
-        ]);
-    }
 }
