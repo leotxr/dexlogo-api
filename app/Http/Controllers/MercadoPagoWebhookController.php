@@ -26,10 +26,10 @@ class MercadoPagoWebhookController extends Controller
             $dataId = $request->input('data.id');
 
             if ($type === 'payment') {
-                $retorno = $this->webhookService->processarPagamento($dataId);
+                $this->webhookService->processarPagamento($dataId);
             }
 
-             return $this->successResponse('Webhook iniciado com sucesso!', $retorno);
+            return $this->successResponse('Webhook iniciado com sucesso!', []);
         } catch (\Exception $e) {
             Log::error('Erro no webhook Mercado Pago: ' . $e->getMessage());
             return response()->json(['status' => 'error'], 200);
