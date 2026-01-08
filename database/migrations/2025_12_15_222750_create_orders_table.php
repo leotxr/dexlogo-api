@@ -19,8 +19,9 @@ return new class extends Migration
             $table->string('telefone');
             $table->enum('plano', ['basico', 'pro']);
             $table->decimal('valor', 10, 2);
-            $table->string('pagamento_id')->nullable();
-            $table->string('preferencia_id')->nullable();
+            $table->string('payment_id')->nullable();
+            $table->string('preference_id')->nullable();
+            $table->string('external_reference')->nullable();
             $table->enum('status', ['pendente', 'aprovado', 'recusado', 'cancelado'])->default('pendente');
             $table->text('detalhes')->nullable();
             $table->timestamps();

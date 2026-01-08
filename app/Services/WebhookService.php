@@ -26,21 +26,17 @@ class WebhookService extends Service
 
     public function processarPagamento($id)
     {
-        //dd($this->paymentClient->get('123456'));
-        //$this->payment = $this->validarPagamento($id);
-
-        $pedidoExistente = Order::where('pagamento_id', $id)->first();
-
-        if ($pedidoExistente) {
-            Log::info("Pagamento {$id} já foi processado anteriormente");
-            return;
-        }
-
         // Validar pagamento usando o service
         $validacao = $this->validarPagamento($id);
 
         if (!$validacao['aprovado']) {
             throw new Exception("Pagamento {$id} não foi aprovado. Status: " . ($validacao['status'] ?? 'desconhecido'));
+        }
+        
+        $pedidoExistente = Order::where('uuid', $validacao['external_reference'])->first();
+
+        if (!$pedidoExistente) {
+            throw new Exception("Pedido não encontrado.");
         }
 
         // Gerar código para o cliente
@@ -68,7 +64,7 @@ class WebhookService extends Service
             'external_reference' => $payment->external_reference,
             'payment_method' => $payment->payment_method_id,
             'payment_type' => $payment->payment_type_id,
-            'data_aprovacao' => $payment->date_approved,
+            'data_aprovacao' => $payment->date_approved
         ];
     }
 

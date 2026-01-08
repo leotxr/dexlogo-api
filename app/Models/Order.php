@@ -13,8 +13,9 @@ class Order extends Model
         'telefone',
         'plano',
         'valor',
-        'pagamento_id',
-        'preferencia_id',
+        'payment_id',
+        'preference_id',
+        'external_reference',
         'status',
         'detalhes',
         'codigo_acesso'

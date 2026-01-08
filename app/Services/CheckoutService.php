@@ -30,7 +30,7 @@ class CheckoutService extends Service
 
         // Atualizar o pedido
         $this->pagamento->update([
-            'preferencia_id' => $this->preference->id
+            'preference_id' => $this->preference->id
         ]);
 
         return [
