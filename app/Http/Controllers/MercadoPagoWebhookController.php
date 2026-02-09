@@ -32,7 +32,7 @@ class MercadoPagoWebhookController extends Controller
             return $this->successResponse('Webhook iniciado com sucesso!', []);
         } catch (\Exception $e) {
             Log::error('Erro no webhook Mercado Pago: ' . $e->getMessage());
-            return response()->json(['status' => 'error'], 200);
+            return $this->errorResponse($e->getMessage(), [], 400);
         }
     }
 }
