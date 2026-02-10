@@ -76,7 +76,7 @@ class CheckoutService extends Service
                 'pending' => url('/payment/pending?order_id=' . $this->pagamento->uuid)
             ],
             'external_reference' => (string) $this->pagamento->uuid,
-            'notification_url' => url('/api/checkout/webhook/' . $this->pagamento->uuid),
+            'notification_url' => url('/api/checkout/webhook'),
         ]);
 
         if (!$this->preference) {

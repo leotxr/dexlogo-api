@@ -6,6 +6,7 @@ use App\Models\AccessCode;
 use App\Models\Order;
 use Exception;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use MercadoPago\Client\Payment\PaymentClient;
 use MercadoPago\MercadoPagoConfig;
@@ -17,6 +18,7 @@ class WebhookService extends Service
 {
     private $paymentClient;
     private $payment;
+    private $paymentId;
 
     public function __construct()
     {
@@ -24,23 +26,17 @@ class WebhookService extends Service
         $this->paymentClient = new PaymentClient();
     }
 
-    public function processarPagamento($id)
+    public function processarPagamento($paymentId)
     {
         // Validar pagamento usando o service
-        $validacao = $this->validarPagamento($id);
+        $payment        = $this->buscarPagamento($paymentId);
+        $orderExist     = Order::where('uuid', $payment->external_reference)->first();
 
-        if (!$validacao['aprovado']) {
-            throw new Exception("Pagamento {$id} não foi aprovado. Status: " . ($validacao['status'] ?? 'desconhecido'));
-        }
-        
-        $pedidoExistente = Order::where('uuid', $validacao['external_reference'])->first();
-
-        if (!$pedidoExistente) {
+        if (!$orderExist) {
             throw new Exception("Pedido não encontrado.");
         }
 
-        // Gerar código para o cliente
-        $this->gerarCodigo($pedidoExistente->id);
+        $this->validarStatusPagamento($payment, $orderExist, $paymentId);
     }
 
     private function buscarPagamento($id)
@@ -54,17 +50,17 @@ class WebhookService extends Service
 
     private function validarPagamento($id)
     {
-        $payment = $this->buscarPagamento($id);
+        return $this->buscarPagamento($id);
 
         return [
-            'aprovado' => $payment->status === 'approved',
-            'status' => $payment->status,
-            'valor' => $payment->transaction_amount,
-            'email' => $payment->payer->email,
-            'external_reference' => $payment->external_reference,
-            'payment_method' => $payment->payment_method_id,
-            'payment_type' => $payment->payment_type_id,
-            'data_aprovacao' => $payment->date_approved
+            'aprovado'              => $payment->status === 'approved',
+            'status'                => $payment->status,
+            'valor'                 => $payment->transaction_amount,
+            'email'                 => $payment->payer->email,
+            'external_reference'    => $payment->external_reference,
+            'payment_method'        => $payment->payment_method_id,
+            'payment_type'          => $payment->payment_type_id,
+            'data_aprovacao'        => $payment->date_approved
         ];
     }
 
@@ -75,5 +71,77 @@ class WebhookService extends Service
             'expires_at'    => now()->addYear(),
             'order_id'      => $orderId
         ]);
+    }
+
+    private function validarStatusPagamento($payment, $order, $paymentId)
+    {
+        switch ($payment->status) {
+            case 'approved':
+                $this->aprovarPedido($order, $payment);
+                break;
+
+            case 'pending':
+            case 'in_process':
+                $order->update([
+                    'payment_id'            => $paymentId,
+                    'status'                => 'aguardando_pagamento',
+                    'mp_payment_status'     => $payment->status,
+                    'payment_status_detail' => $payment->status_detail,
+                ]);
+                break;
+
+            case 'rejected':
+                $order->update([
+                    'payment_id'            => $paymentId,
+                    'status'                => 'pagamento_recusado',
+                    'payment_status'        => $payment->status,
+                    'payment_status_detail' => $payment->status_detail,
+                ]);
+                //$this->notificarPagamentoRecusado($order, $payment->status_detail);
+                break;
+
+            case 'cancelled':
+                $order->update([
+                    'payment_id'    => $paymentId,
+                    'status'        => 'cancelado',
+                ]);
+                break;
+
+            case 'refunded':
+                //$this->reverterPedido($order);
+                break;
+
+            default:
+                Log::warning("Status desconhecido: {$payment->status}");
+        }
+    }
+
+    private function aprovarPedido($order, $payment)
+    {
+        if ($order->accessCode) {
+            Log::info("Pedido {$order->id} já possui código");
+            return;
+        }
+
+        // Gerar código
+        $code = $this->gerarCodigo($order->id);
+
+        if(!$code) {
+            throw new Exception('Ocorreu um erro ao gerar o codigo de acesso.');
+        }
+
+        // Atualizar pedido
+        $order->update([
+            'payment_id'        => $payment->id,
+            'status'            => 'pago',
+            'payment_method'    => $payment->payment_method_id,
+            'payment_status'    => 'approved',
+            'data_pagamento'    => $payment->date_approved ?? now(),
+        ]);
+
+        // Enviar email
+        //Mail::to($order->email)->send(new CodigoGerado($pedido));
+
+        Log::info("Código gerado para pedido {$order->id}: {$code}");
     }
 }

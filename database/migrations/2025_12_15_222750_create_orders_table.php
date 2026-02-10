@@ -22,7 +22,19 @@ return new class extends Migration
             $table->string('payment_id')->nullable();
             $table->string('preference_id')->nullable();
             $table->string('external_reference')->nullable();
-            $table->enum('status', ['pendente', 'aprovado', 'recusado', 'cancelado'])->default('pendente');
+            $table->enum('status', [
+                'pendente',
+                'aguardando_pagamento',
+                'pago',
+                'pagamento_recusado',
+                'cancelado',
+                'reembolsado',
+                'chargeback',
+                'em_disputa'
+            ])->default('pendente');
+            $table->string('mp_payment_status')->nullable();
+            $table->string('mp_payment_status_detail')->nullable();
+
             $table->text('detalhes')->nullable();
             $table->timestamps();
 
