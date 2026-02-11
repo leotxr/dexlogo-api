@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Exceptions\MailerException;
+use App\Mail\CodigoAcessoMail;
 use App\Models\AccessCode;
 use App\Models\Order;
 use Exception;
@@ -37,6 +39,8 @@ class WebhookService extends Service
         }
 
         $this->validarStatusPagamento($payment, $orderExist, $paymentId);
+
+        return true;
     }
 
     private function buscarPagamento($id)
@@ -48,26 +52,10 @@ class WebhookService extends Service
         return $payment;
     }
 
-    private function validarPagamento($id)
-    {
-        return $this->buscarPagamento($id);
-
-        return [
-            'aprovado'              => $payment->status === 'approved',
-            'status'                => $payment->status,
-            'valor'                 => $payment->transaction_amount,
-            'email'                 => $payment->payer->email,
-            'external_reference'    => $payment->external_reference,
-            'payment_method'        => $payment->payment_method_id,
-            'payment_type'          => $payment->payment_type_id,
-            'data_aprovacao'        => $payment->date_approved
-        ];
-    }
-
     public function gerarCodigo($orderId)
     {
         return AccessCode::create([
-            'code'          => Str::upper(Str::random(16)),
+            'code'          => Str::upper(Str::random(8)),
             'expires_at'    => now()->addYear(),
             'order_id'      => $orderId
         ]);
@@ -124,9 +112,9 @@ class WebhookService extends Service
         }
 
         // Gerar código
-        $code = $this->gerarCodigo($order->id);
+        $accessCode = $this->gerarCodigo($order->id);
 
-        if(!$code) {
+        if (!$accessCode) {
             throw new Exception('Ocorreu um erro ao gerar o codigo de acesso.');
         }
 
@@ -139,9 +127,15 @@ class WebhookService extends Service
             'data_pagamento'    => $payment->date_approved ?? now(),
         ]);
 
-        // Enviar email
-        //Mail::to($order->email)->send(new CodigoGerado($pedido));
+        // Enviar logica de email pro job
+        $this->enviarEmail($order, $accessCode);
+        Log::info("Código gerado para pedido {$order->id}: {$accessCode}");
+    }
 
-        Log::info("Código gerado para pedido {$order->id}: {$code}");
+    public function enviarEmail($order, $accessCode)
+    {
+        if(!Mail::to($order->email)->send(new CodigoAcessoMail($accessCode->code))) {
+            throw new MailerException('Ocorreu um erro ao enviar o e-mail.', 400);
+        }
     }
 }

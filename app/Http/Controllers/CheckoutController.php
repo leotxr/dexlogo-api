@@ -9,6 +9,7 @@ use App\Services\WebhookService;
 use App\Traits\ResponseTrait;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use MercadoPago\SDK;
 use MercadoPago\Preference;
 use MercadoPago\Item;
